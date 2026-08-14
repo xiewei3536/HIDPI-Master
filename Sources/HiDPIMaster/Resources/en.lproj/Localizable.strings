@@ -1,0 +1,134 @@
+/* App */
+"app.name" = "HiDPI Master";
+"app.chip.apple" = "Apple Silicon Mac";
+"app.chip.intel" = "Intel Mac";
+"menu.about" = "About HiDPI Master";
+"footer.quit" = "Quit";
+"footer.refresh" = "Refresh displays";
+"header.noDisplays" = "No displays detected";
+
+/* Display card */
+"display.builtin" = "Built-in Display";
+"display.external" = "External Display";
+"badge.lowres" = "Standard";
+"spec.ppi" = "%ld PPI";
+"spec.current" = "UI %ld × %ld";
+"modes.title" = "Resolutions";
+"modes.showAll" = "Show all";
+"action.largerText" = "Larger text";
+"action.moreSpace" = "More space";
+
+/* Recommendation */
+"reco.title" = "Smart Recommendation";
+"reco.looksLike" = "Looks like %ld × %ld";
+"reco.apply" = "Apply";
+"reco.applied" = "Applied";
+"reco.reasonSeparator" = " · ";
+"reco.reason.sharp2x" = "razor-sharp 2× Retina text";
+"reco.reason.sharpFrac" = "sharp HiDPI rendering";
+"reco.reason.notHiDPI" = "not HiDPI — text looks coarse";
+"reco.reason.comfy" = "comfortable UI size for this screen";
+"reco.reason.small" = "UI will look small";
+"reco.reason.large" = "UI will look large";
+"reco.reason.downscale" = "rendered above native, then downscaled";
+
+/* Enable flow */
+"enable.banner.title" = "HiDPI is not enabled for this display";
+"enable.banner.desc" = "macOS only offers non-Retina scaling here, which looks blurry when enlarged. Enable HiDPI to get a larger and crisp interface.";
+"enable.button" = "Enable HiDPI…";
+"enable.sheet.title" = "Enable HiDPI";
+"enable.sheet.for" = "Display: %@";
+"enable.method.override" = "System Override (restart)";
+"enable.method.virtual" = "Virtual Display (instant)";
+"enable.pickSize" = "Choose your preferred UI size (looks-like resolution)";
+"enable.override.allNote" = "All sizes above will be installed — you can switch freely after restarting.";
+"enable.run.override" = "Install…";
+"enable.run.virtual" = "Enable Now";
+"enable.intel.note" = "Writes a display override file (admin password required). After a restart, HiDPI resolutions appear natively in macOS — no background app needed. SIP stays untouched.";
+"enable.as.note" = "Creates a virtual HiDPI display and mirrors your monitor onto it — takes effect instantly, no restart. Keep the app running; turn on “Launch at login” for convenience.";
+"enable.virtual.running" = "HiDPI virtual mode is active";
+"enable.virtual.stop" = "Turn Off";
+"enable.virtual.doneTitle" = "HiDPI enabled";
+"enable.virtual.doneMsg" = "Your display is now running in HiDPI virtual mode. Use the resolution chips to fine-tune the UI size.";
+"enable.error" = "Could not enable HiDPI";
+
+/* Alerts */
+"alert.ok" = "OK";
+"alert.cancel" = "Cancel";
+"alert.rebootTitle" = "Override installed";
+"alert.rebootMsg" = "Restart your Mac to activate HiDPI. After restarting, open HiDPI Master and apply the recommended resolution.";
+"alert.rebootNow" = "Restart Now";
+"alert.later" = "Later";
+
+/* Errors */
+"err.applyFailed" = "Could not change resolution";
+"err.applyFailedMsg" = "The display rejected this mode. Try another resolution.";
+"err.unsupportedVirtual" = "The virtual display API is unavailable on this system.";
+"err.creationFailed" = "Failed to create the virtual HiDPI display.";
+"err.mirrorFailed" = "Failed to mirror the monitor onto the virtual HiDPI display.";
+"err.modeNotFound" = "The requested HiDPI mode was not found.";
+"err.restoreFailed" = "Restore incomplete";
+"err.restoreFailedMsg" = "Some override files could not be removed. You can delete them manually under /Library/Displays/Contents/Resources/Overrides.";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.language" = "Language";
+"settings.language.auto" = "Auto";
+"settings.behavior" = "Behavior";
+"settings.autoApply" = "Auto-apply saved setup";
+"settings.autoApply.desc" = "Re-apply your preferred resolution / virtual HiDPI whenever the display reconnects.";
+"settings.launchAtLogin" = "Launch at login";
+"settings.launchAtLogin.desc" = "Recommended for the virtual display method so HiDPI is restored after a reboot.";
+"settings.restoreSection" = "Restore";
+"settings.restore.desc" = "Turns off virtual HiDPI displays and removes installed override files (admin password may be required).";
+"settings.restore" = "Restore all displays to default";
+"settings.restore.doneTitle" = "Restored";
+"settings.restore.doneMsg" = "All HiDPI Master changes have been removed. Restart to fully clear installed overrides.";
+"settings.about" = "About";
+"about.text" = "Crisp, larger UI for external monitors. Smart HiDPI recommendations based on your panel size and pixel density. Universal app for Intel & Apple Silicon.";
+
+/* Tips */
+"tip.intel" = "Tip: on Intel Macs the override method takes effect after a restart and then works system-wide — no background app needed.";
+"tip.appleSilicon" = "Tip: on Apple Silicon, HiDPI runs through a virtual display. Keep the app running and enable “Launch at login” so your setup is restored automatically.";
+
+/* Friendly size (simple mode) */
+"size.title" = "Text & icon size";
+"size.end.larger" = "Bigger";
+"size.end.smaller" = "Smaller";
+"size.level.xl" = "Extra large";
+"size.level.l" = "Large";
+"size.level.just" = "Just right";
+"size.level.s" = "Small";
+"size.level.xs" = "Extra small";
+"size.current" = "Now: %@";
+"size.recommended.mark" = "Recommended";
+"size.crispSuffix" = ", crisp and sharp";
+"settings.advanced" = "Show technical details (advanced)";
+"settings.advanced.desc" = "Show resolutions, PPI and the full mode list instead of the simple size slider.";
+
+/* Refresh rate & extra sizes */
+"refresh.title" = "Smoothness (refresh rate)";
+"refresh.hz" = "%ld Hz";
+"modes.addMore" = "Want it bigger? Add more HiDPI sizes…";
+
+/* Aspect ratio guard */
+"badge.aspectMismatch" = "Aspect mismatch";
+"alert.aspectTitle" = "This size doesn't match the screen's shape";
+"alert.aspectMsg" = "The picture may show black bars, stretch, or get cropped. Apply anyway?";
+"alert.applyAnyway" = "Apply Anyway";
+"enable.aspectNote" = "Sizes marked ⚠ differ from this screen's aspect ratio — the picture may letterbox or distort.";
+
+/* Updates */
+"settings.updates" = "Updates";
+"update.check" = "Check for Updates";
+"update.autoCheck" = "Check for updates automatically";
+"update.autoCheck.desc" = "Get a notification when a new version is released, then download and install with one click.";
+"update.upToDateTitle" = "You're up to date";
+"update.upToDateMsg" = "HiDPI Master %@ is the latest version.";
+"update.availableTitle" = "New version %@ available";
+"update.availableMsg" = "Download and install now? The app will relaunch automatically when finished.";
+"update.installNow" = "Update Now";
+"update.errTitle" = "Update failed";
+"update.errMsg" = "Could not reach the update server. Please try again later.";
+"update.notifyTitle" = "HiDPI Master update available";
+"update.notifyBody" = "Version %@ is ready — click to install.";

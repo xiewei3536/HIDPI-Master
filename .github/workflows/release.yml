@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal app (arm64 + x86_64)
+        run: |
+          APP_VERSION="${GITHUB_REF_NAME#v}" ./scripts/build-app.sh
+
+      - name: Package DMG & ZIP
+        run: ./scripts/make-dist.sh
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/HiDPI-Master.dmg
+            dist/HiDPI-Master.zip
+          generate_release_notes: true

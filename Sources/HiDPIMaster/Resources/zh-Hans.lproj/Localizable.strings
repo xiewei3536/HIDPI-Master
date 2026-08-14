@@ -1,0 +1,134 @@
+/* App */
+"app.name" = "HiDPI 大师";
+"app.chip.apple" = "Apple Silicon 芯片 Mac";
+"app.chip.intel" = "Intel 芯片 Mac";
+"menu.about" = "关于 HiDPI 大师";
+"footer.quit" = "退出";
+"footer.refresh" = "刷新显示器";
+"header.noDisplays" = "未检测到显示器";
+
+/* Display card */
+"display.builtin" = "内建显示器";
+"display.external" = "外接显示器";
+"badge.lowres" = "标准分辨率";
+"spec.ppi" = "%ld PPI";
+"spec.current" = "界面 %ld × %ld";
+"modes.title" = "分辨率";
+"modes.showAll" = "显示全部";
+"action.largerText" = "放大文字";
+"action.moreSpace" = "更多空间";
+
+/* Recommendation */
+"reco.title" = "智能推荐";
+"reco.looksLike" = "等效 %ld × %ld";
+"reco.apply" = "应用";
+"reco.applied" = "已应用";
+"reco.reasonSeparator" = "・";
+"reco.reason.sharp2x" = "2× Retina 渲染，文字最锐利";
+"reco.reason.sharpFrac" = "HiDPI 渲染，画面清晰";
+"reco.reason.notHiDPI" = "非 HiDPI，文字边缘较粗糙";
+"reco.reason.comfy" = "界面大小最适合这块屏幕";
+"reco.reason.small" = "界面会偏小";
+"reco.reason.large" = "界面会偏大";
+"reco.reason.downscale" = "以超采样渲染后缩放，细节更平滑";
+
+/* Enable flow */
+"enable.banner.title" = "此显示器尚未开启 HiDPI";
+"enable.banner.desc" = "macOS 目前只提供非 Retina 缩放，放大界面时会变模糊。开启 HiDPI 后，界面可以又大又清晰。";
+"enable.button" = "开启 HiDPI…";
+"enable.sheet.title" = "开启 HiDPI";
+"enable.sheet.for" = "显示器：%@";
+"enable.method.override" = "系统覆写（需重启）";
+"enable.method.virtual" = "虚拟屏幕（立即生效）";
+"enable.pickSize" = "选择偏好的界面大小（等效分辨率）";
+"enable.override.allNote" = "以上尺寸会全部安装，重启后可随时自由切换。";
+"enable.run.override" = "安装…";
+"enable.run.virtual" = "立即开启";
+"enable.intel.note" = "会写入显示器覆写文件（需要管理员密码）。重启后，HiDPI 分辨率将原生出现在 macOS 中，无需后台 App，也无需改动 SIP。";
+"enable.as.note" = "创建虚拟 HiDPI 屏幕并将您的显示器镜像到它上面，立即生效、免重启。请保持 App 运行，建议开启“登录时启动”。";
+"enable.virtual.running" = "HiDPI 虚拟模式运行中";
+"enable.virtual.stop" = "关闭";
+"enable.virtual.doneTitle" = "HiDPI 已开启";
+"enable.virtual.doneMsg" = "显示器已进入 HiDPI 虚拟模式，可通过分辨率选项微调界面大小。";
+"enable.error" = "无法开启 HiDPI";
+
+/* Alerts */
+"alert.ok" = "好";
+"alert.cancel" = "取消";
+"alert.rebootTitle" = "覆写文件已安装";
+"alert.rebootMsg" = "请重启以启用 HiDPI。重启后，打开 HiDPI 大师并应用推荐的分辨率即可。";
+"alert.rebootNow" = "立即重启";
+"alert.later" = "稍后";
+
+/* Errors */
+"err.applyFailed" = "无法切换分辨率";
+"err.applyFailedMsg" = "显示器不接受此模式，请尝试其他分辨率。";
+"err.unsupportedVirtual" = "此系统无法使用虚拟屏幕 API。";
+"err.creationFailed" = "创建虚拟 HiDPI 屏幕失败。";
+"err.mirrorFailed" = "无法将显示器镜像到虚拟 HiDPI 屏幕。";
+"err.modeNotFound" = "未找到指定的 HiDPI 模式。";
+"err.restoreFailed" = "还原未完成";
+"err.restoreFailedMsg" = "部分覆写文件无法移除，您可以手动删除 /Library/Displays/Contents/Resources/Overrides 中的文件。";
+
+/* Settings */
+"settings.title" = "设置";
+"settings.language" = "语言";
+"settings.language.auto" = "自动";
+"settings.behavior" = "行为";
+"settings.autoApply" = "自动应用已保存设置";
+"settings.autoApply.desc" = "显示器重新接入时，自动应用您偏好的分辨率／虚拟 HiDPI。";
+"settings.launchAtLogin" = "登录时启动";
+"settings.launchAtLogin.desc" = "使用虚拟屏幕方案时建议开启，重启后会自动恢复 HiDPI。";
+"settings.restoreSection" = "还原";
+"settings.restore.desc" = "关闭所有虚拟 HiDPI 屏幕，并移除已安装的覆写文件（可能需要管理员密码）。";
+"settings.restore" = "将所有显示器还原为默认";
+"settings.restore.doneTitle" = "已还原";
+"settings.restore.doneMsg" = "HiDPI 大师的所有更改已移除。重启后即可完全清除覆写文件效果。";
+"settings.about" = "关于";
+"about.text" = "让外接屏幕的界面又大又清晰。根据屏幕尺寸与像素密度智能推荐最佳 HiDPI 分辨率。Intel 与 Apple Silicon 通用。";
+
+/* Tips */
+"tip.intel" = "小提示：Intel Mac 使用覆写方案，重启后即为系统原生支持，无需后台 App。";
+"tip.appleSilicon" = "小提示：Apple Silicon 通过虚拟屏幕实现 HiDPI，请保持 App 运行并开启“登录时启动”，设置会自动恢复。";
+
+/* 白话大小（简单模式） */
+"size.title" = "文字与图标大小";
+"size.end.larger" = "字大图标大";
+"size.end.smaller" = "字小图标小";
+"size.level.xl" = "超大";
+"size.level.l" = "偏大";
+"size.level.just" = "刚刚好";
+"size.level.s" = "偏小";
+"size.level.xs" = "超小";
+"size.current" = "当前：%@";
+"size.recommended.mark" = "推荐";
+"size.crispSuffix" = "，而且清晰锐利";
+"settings.advanced" = "显示技术数据（高级）";
+"settings.advanced.desc" = "以分辨率、PPI 等完整数据取代通俗的大小滑块。";
+
+/* 刷新率与更多档位 */
+"refresh.title" = "流畅度（刷新率）";
+"refresh.hz" = "%ld Hz";
+"modes.addMore" = "想要更大？添加更多 HiDPI 档位…";
+
+/* 比例防呆 */
+"badge.aspectMismatch" = "比例不符";
+"alert.aspectTitle" = "此尺寸与屏幕比例不符";
+"alert.aspectMsg" = "应用后画面可能出现黑边、变形或被裁切。仍要应用吗？";
+"alert.applyAnyway" = "仍要应用";
+"enable.aspectNote" = "标有 ⚠ 的尺寸与此屏幕比例不同，应用后画面可能出现黑边或变形。";
+
+/* 更新 */
+"settings.updates" = "更新";
+"update.check" = "检查更新";
+"update.autoCheck" = "自动检查更新";
+"update.autoCheck.desc" = "新版本发布时收到通知，一键自动下载安装。";
+"update.upToDateTitle" = "已是最新版本";
+"update.upToDateMsg" = "HiDPI 大师 %@ 已是最新版本。";
+"update.availableTitle" = "发现新版本 %@";
+"update.availableMsg" = "要立即下载并安装吗？完成后 App 会自动重新启动。";
+"update.installNow" = "立即更新";
+"update.errTitle" = "更新失败";
+"update.errMsg" = "无法连接更新服务器，请稍后再试。";
+"update.notifyTitle" = "HiDPI 大师有新版本";
+"update.notifyBody" = "版本 %@ 已可下载，点按即可安装。";
