@@ -84,6 +84,12 @@ final class DisplayManager: ObservableObject {
         var unique: [String: ModeInfo] = [:]
         for m in all where m.isUsableForDesktopGUI() || m.ioDisplayModeID == current?.ioDisplayModeID {
             let mi = ModeInfo(mode: m)
+            // Same size + Hz can exist twice (e.g. GPU-scaled override mode vs.
+            // a monitor-scaled EDID timing); keep the one macOS deems usable.
+            if let existing = unique[mi.id],
+               existing.mode.isUsableForDesktopGUI(), !m.isUsableForDesktopGUI() {
+                continue
+            }
             unique[mi.id] = mi
         }
         if let cur = current {
