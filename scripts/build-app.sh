@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 APP_NAME="HiDPI Master"
 BUNDLE_ID="com.hidpimaster.app"
-VERSION="${APP_VERSION:-1.0.0}"
+VERSION="${APP_VERSION:-1.1.0}"
 DIST="$ROOT/dist"
 
 # Full Xcode supports `--arch a --arch b` directly; Command Line Tools alone

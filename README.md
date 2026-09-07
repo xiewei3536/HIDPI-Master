@@ -33,6 +33,13 @@ HiDPI Master unlocks **HiDPI (2× Retina) modes** so the UI gets bigger *and sta
 | 🎞 **Refresh-rate control** | Pick any Hz your display supports; your Hz is preserved when switching sizes |
 | 🔁 **Auto-apply** | Remembers per-display setups and restores them on reconnect; launch-at-login support |
 | 🔔 **Auto-update** | Checks GitHub Releases, notifies you, downloads and installs the new version in one click |
+| ✨ **One-click Optimize** | One header button applies the recommended size to every external display |
+| 🙋 **“I prefer” switch** | Bigger text / Balanced / More space — shifts every recommendation and size label |
+| 🛟 **Safe switching** | Risky changes (refresh rate, non-HiDPI, odd aspect) get a “Does this look right?” countdown and auto-revert |
+| 📏 **Size correction** | Monitor didn't report its size, or got it wrong? Pick the inch size once |
+| 💾 **Persistence guard** | Detects HiDPI modes with no override file behind them (they vanish after a reboot) and saves them in one click |
+| 🔁 **Apply after restart** | Pick a size before rebooting; it's applied automatically when the Mac is back |
+| 🖱 **Menu-bar quick switch** | Right-click the icon to change sizes without opening the panel |
 | 🌐 **Localized** | English, 繁體中文, 简体中文 — switchable live inside the app |
 
 ## How it works

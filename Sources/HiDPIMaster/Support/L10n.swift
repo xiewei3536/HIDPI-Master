@@ -52,6 +52,7 @@ final class L10n: ObservableObject {
             bundle = .module
         }
         objectWillChange.send()
+        NotificationCenter.default.post(name: .hidpiLanguageChanged, object: nil)
     }
 
     func t(_ key: String) -> String {

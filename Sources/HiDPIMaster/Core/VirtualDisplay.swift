@@ -179,24 +179,30 @@ final class VirtualDisplayController {
         )
     }
 
-    func disableHiDPI(for display: DisplayInfo) {
+    /// Stops mirroring and destroys the virtual display. With `keepConfig`
+    /// the saved setup survives so the next launch recreates it.
+    func disableHiDPI(for display: DisplayInfo, keepConfig: Bool = false) {
         let key = display.persistentKey
-        // Undo mirroring first
         var config: CGDisplayConfigRef?
         if CGBeginDisplayConfiguration(&config) == .success {
             CGConfigureDisplayMirrorOfDisplay(config, display.id, kCGNullDirectDisplay)
             CGCompleteDisplayConfiguration(config, .permanently)
         }
         virtualDisplays.removeValue(forKey: key) // releasing the object destroys the display
-        ProfileStore.shared.setVirtualConfig(nil, for: key)
+        if !keepConfig {
+            ProfileStore.shared.setVirtualConfig(nil, for: key)
+        }
+    }
+
+    func teardownAll(keepConfig: Bool) {
+        for d in DisplayManager.shared.displays where d.isVirtualMirror {
+            disableHiDPI(for: d, keepConfig: keepConfig)
+        }
+        virtualDisplays.removeAll()
     }
 
     func disableAll() {
-        let mgr = DisplayManager.shared
-        for d in mgr.displays where isVirtualDisplay(d.mirrorsDisplayID) {
-            disableHiDPI(for: d)
-        }
-        virtualDisplays.removeAll()
+        teardownAll(keepConfig: false)
     }
 
     // MARK: - Mirroring & modes

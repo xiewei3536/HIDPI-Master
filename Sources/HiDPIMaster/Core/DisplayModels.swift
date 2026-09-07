@@ -1,7 +1,8 @@
 import Foundation
 import CoreGraphics
 
-/// One selectable display mode (deduplicated per width×height×density).
+/// One selectable display mode. Identity includes refresh rate, so every
+/// selectable Hz is its own entry; `resolutionKey` ignores Hz.
 struct ModeInfo: Identifiable, Hashable {
     let mode: CGDisplayMode
     let width: Int          // points ("looks like")
@@ -13,9 +14,7 @@ struct ModeInfo: Identifiable, Hashable {
     var isHiDPI: Bool { pixelWidth > width }
     var scale: Double { width > 0 ? Double(pixelWidth) / Double(width) : 1 }
 
-    /// Identity including refresh rate (one entry per selectable Hz).
     var id: String { "\(resolutionKey)@\(Int(refreshRate.rounded()))" }
-    /// Identity of the resolution/density pair, ignoring refresh rate.
     var resolutionKey: String { "\(width)x\(height)@\(pixelWidth)x\(pixelHeight)" }
 
     static func == (lhs: ModeInfo, rhs: ModeInfo) -> Bool { lhs.id == rhs.id }
@@ -37,27 +36,59 @@ struct DisplayInfo: Identifiable {
     let isBuiltin: Bool
     let vendorID: UInt32
     let productID: UInt32
-    let physicalSize: CGSize        // millimeters
+    let serialNumber: UInt32
+    let physicalSize: CGSize        // millimeters as reported by EDID (may be bogus)
     let nativePixelWidth: Int
     let nativePixelHeight: Int
     let currentMode: ModeInfo?
-    let modes: [ModeInfo]           // sorted large → small
-    let mirrorsDisplayID: CGDirectDisplayID  // non-zero when this display mirrors another
+    let modes: [ModeInfo]           // sorted large → small (all Hz variants)
+    let mirrorsDisplayID: CGDirectDisplayID
+    /// True when this panel mirrors one of our virtual HiDPI displays; in that
+    /// case `modes`/`currentMode` describe the virtual display.
+    let isVirtualMirror: Bool
+    /// User-corrected diagonal (inches) when EDID size is missing or wrong.
+    let manualDiagonalInches: Double?
 
-    /// Stable key across reconnects for saving profiles.
-    var persistentKey: String { "\(vendorID)-\(productID)-\(nativePixelWidth)x\(nativePixelHeight)" }
+    // MARK: Identity
 
-    var diagonalInches: Double {
+    static func makeKey(vendorID: UInt32, productID: UInt32, serialNumber: UInt32,
+                        nativeW: Int, nativeH: Int) -> String {
+        if vendorID == 0 && productID == 0 { return "generic-\(nativeW)x\(nativeH)" }
+        var key = "\(vendorID)-\(productID)"
+        if serialNumber != 0 { key += "-\(serialNumber)" }
+        return key
+    }
+
+    /// Stable key across reconnects/reboots for saving profiles.
+    var persistentKey: String {
+        Self.makeKey(vendorID: vendorID, productID: productID, serialNumber: serialNumber,
+                     nativeW: nativePixelWidth, nativeH: nativePixelHeight)
+    }
+
+    // MARK: Physical size
+
+    var detectedDiagonalInches: Double {
         let w = physicalSize.width, h = physicalSize.height
         guard w > 0, h > 0 else { return 0 }
         return (w * w + h * h).squareRoot() / 25.4
     }
+
+    /// Best-known diagonal: manual correction first, then a plausible EDID value.
+    var diagonalInches: Double {
+        if let m = manualDiagonalInches, m > 0 { return m }
+        let d = detectedDiagonalInches
+        return (d >= 8 && d <= 110) ? d : 0
+    }
+
+    var sizeUnknown: Bool { diagonalInches == 0 }
 
     var ppi: Double {
         guard diagonalInches > 0 else { return 0 }
         let dw = Double(nativePixelWidth), dh = Double(nativePixelHeight)
         return (dw * dw + dh * dh).squareRoot() / diagonalInches
     }
+
+    // MARK: Mode helpers
 
     var hasHiDPIModes: Bool { modes.contains { $0.isHiDPI } }
 
@@ -101,7 +132,7 @@ struct DisplayInfo: Identifiable {
     }
 
     /// Whether a looks-like size matches the panel's aspect ratio.
-    /// Mismatched sizes will letterbox, stretch or crop when applied.
+    /// Mismatched sizes letterbox, stretch or crop when applied.
     func fitsPanelAspect(width: Int, height: Int) -> Bool {
         guard nativeAspect > 0, height > 0 else { return true }
         let a = Double(width) / Double(height)

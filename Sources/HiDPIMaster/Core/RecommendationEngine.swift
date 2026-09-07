@@ -13,8 +13,13 @@ struct Recommendation: Identifiable {
 }
 
 /// Scores "looks like" sizes for a panel: balance between comfortable UI size
-/// (target effective density scaled by screen size) and text sharpness (2× Retina best).
+/// (target effective density scaled by screen size, shifted by the user's
+/// preference) and text sharpness (2× Retina best).
 enum RecommendationEngine {
+
+    /// Largest HiDPI backing width we ever create (7680×4320 is refused by
+    /// most GPUs/drivers and macOS itself never offers it).
+    static let maxBackingWidth = 7000
 
     /// Comfortable effective density target. Bigger screens are viewed from
     /// farther away, so they tolerate (and prefer) a lower effective PPI.
@@ -28,12 +33,14 @@ enum RecommendationEngine {
         }
     }
 
-    /// Comfortable target adjusted for the panel itself: a low-density panel
+    /// Target adjusted for the panel and the user: a low-density panel
     /// (e.g. 27″ 1080p ≈ 81 PPI) cannot comfortably show a denser UI than its
-    /// native size, so the target is capped at the physical PPI.
+    /// native size, and the "bigger text / more space" preference shifts it.
     static func effectiveTargetUIPPI(for display: DisplayInfo) -> Double {
-        let t = targetUIPPI(diagonalInches: display.diagonalInches)
-        return display.ppi > 20 ? min(t, display.ppi) : t
+        var t = targetUIPPI(diagonalInches: display.diagonalInches)
+        if display.ppi > 20 { t = min(t, display.ppi) }
+        t += ProfileStore.shared.sizePreference.ppiBias
+        return max(t, 40)
     }
 
     static func sizeScore(uiPPI: Double, target: Double) -> Double {
@@ -44,22 +51,17 @@ enum RecommendationEngine {
 
     static func sharpnessScore(for mode: ModeInfo, native: (w: Int, h: Int)) -> Double {
         if mode.isHiDPI {
-            // exact 2× backing = sharpest possible
             if abs(mode.scale - 2.0) < 0.01 { return 1.0 }
             return 0.82
         }
-        // native 1:1 non-HiDPI is acceptable but not crisp for text
         if mode.pixelWidth == native.w && mode.pixelHeight == native.h { return 0.5 }
-        // upscaled non-HiDPI looks blurry
         return 0.22
     }
 
     /// Rank the modes that exist right now.
-    /// Recommendations are HiDPI-only: a non-Retina mode is never suggested.
-    /// With no HiDPI modes available this returns [] and the UI shows the
-    /// "Enable HiDPI" flow instead.
+    /// HiDPI-only and panel-aspect-only: a blurry or ill-fitting mode is never
+    /// recommended. Empty when the panel size is unknown or no HiDPI exists.
     static func recommend(for display: DisplayInfo) -> [Recommendation] {
-        // HiDPI-only AND panel-aspect-only: an ill-fitting size is never recommended.
         let pool = display.uniqueHiDPIModes.filter {
             display.fitsPanelAspect(width: $0.width, height: $0.height)
         }
@@ -75,11 +77,7 @@ enum RecommendationEngine {
             let score = 0.55 * size + 0.45 * sharp
 
             var reasons: [String] = []
-            if mode.isHiDPI {
-                reasons.append(abs(mode.scale - 2.0) < 0.01 ? "reco.reason.sharp2x" : "reco.reason.sharpFrac")
-            } else {
-                reasons.append("reco.reason.notHiDPI")
-            }
+            reasons.append(abs(mode.scale - 2.0) < 0.01 ? "reco.reason.sharp2x" : "reco.reason.sharpFrac")
             if uiPPI < target - 12 {
                 reasons.append("reco.reason.large")
             } else if uiPPI > target + 12 {
@@ -92,37 +90,26 @@ enum RecommendationEngine {
             }
 
             recos.append(Recommendation(
-                looksLikeWidth: mode.width,
-                looksLikeHeight: mode.height,
-                mode: mode,
-                score: score,
-                reasonKeys: reasons,
-                isTop: false
-            ))
+                looksLikeWidth: mode.width, looksLikeHeight: mode.height,
+                mode: mode, score: score, reasonKeys: reasons, isTop: false))
         }
         recos.sort { $0.score > $1.score }
         if let first = recos.first {
             recos[0] = Recommendation(
-                looksLikeWidth: first.looksLikeWidth,
-                looksLikeHeight: first.looksLikeHeight,
-                mode: first.mode,
-                score: first.score,
-                reasonKeys: first.reasonKeys,
-                isTop: true
-            )
+                looksLikeWidth: first.looksLikeWidth, looksLikeHeight: first.looksLikeHeight,
+                mode: first.mode, score: first.score, reasonKeys: first.reasonKeys, isTop: true)
         }
         return recos
     }
 
-    /// Friendly size label ("extra large" … "extra small") for a looks-like size,
-    /// relative to the comfortable target for this panel. Falls back to position
-    /// among available HiDPI modes when the panel reports no physical size.
+    /// Friendly size label ("extra large" … "extra small") for a looks-like
+    /// size, relative to the (preference-adjusted) comfortable target.
+    /// Falls back to rank among HiDPI modes when the panel size is unknown.
     static func sizeLevelKey(for display: DisplayInfo, looksLikeWidth: Int, looksLikeHeight: Int) -> String {
         if display.diagonalInches > 1 {
             let target = effectiveTargetUIPPI(for: display)
             let ui = display.uiPPI(looksLikeWidth: looksLikeWidth, looksLikeHeight: looksLikeHeight)
-            let d = ui - target
-            switch d {
+            switch ui - target {
             case ..<(-22): return "size.level.xl"
             case ..<(-9):  return "size.level.l"
             case ...9:     return "size.level.just"
@@ -130,13 +117,11 @@ enum RecommendationEngine {
             default:       return "size.level.xs"
             }
         }
-        // No physical size info: rank by position among HiDPI modes
         let sorted = display.uniqueHiDPIModes.sorted { $0.width < $1.width }
         guard sorted.count > 1, let idx = sorted.firstIndex(where: { $0.width == looksLikeWidth }) else {
             return "size.level.just"
         }
-        let ratio = Double(idx) / Double(sorted.count - 1)
-        switch ratio {
+        switch Double(idx) / Double(sorted.count - 1) {
         case ..<0.2:  return "size.level.xl"
         case ..<0.45: return "size.level.l"
         case ...0.6:  return "size.level.just"
@@ -149,8 +134,8 @@ enum RecommendationEngine {
         sizeLevelKey(for: display, looksLikeWidth: mode.width, looksLikeHeight: mode.height)
     }
 
-    /// "Looks like" sizes worth injecting/creating when HiDPI is not available yet.
-    /// Returns sizes in the panel's aspect ratio, largest → smallest, best first.
+    /// Same-aspect "looks like" sizes worth creating for this panel,
+    /// largest → smallest. All render at 2× and stay within GPU-safe limits.
     static func candidateLooksLikeSizes(for display: DisplayInfo) -> [(w: Int, h: Int)] {
         let nw = display.nativePixelWidth, nh = display.nativePixelHeight
         guard nw > 0, nh > 0 else { return [] }
@@ -162,9 +147,8 @@ enum RecommendationEngine {
             var h = Int((Double(nh) * f).rounded())
             w -= w % 2
             h -= h % 2
-            guard w >= 1280 else { continue }
-            let key = "\(w)x\(h)"
-            if seen.insert(key).inserted { out.append((w, h)) }
+            guard w >= 1280, w * 2 <= maxBackingWidth else { continue }
+            if seen.insert("\(w)x\(h)").inserted { out.append((w, h)) }
         }
         return out
     }
@@ -180,39 +164,33 @@ enum RecommendationEngine {
     }
 
     /// Maximum possible HiDPI candidate set for this panel: every same-aspect
-    /// fraction of native, plus a catalog of common sizes across aspect
-    /// families (16:9, 16:10, 4:3, ultrawide) flagged by whether they fit.
+    /// fraction of native plus a catalog of common sizes across aspect
+    /// families (16:9, 16:10, ultrawide, 4:3/5:4), flagged by fit.
     static func extendedCandidates(for display: DisplayInfo) -> [SizeCandidate] {
         var out: [SizeCandidate] = candidateLooksLikeSizes(for: display)
             .map { SizeCandidate(w: $0.w, h: $0.h, fits: true) }
         var seen = Set(out.map(\.id))
 
         let catalog: [(Int, Int)] = [
-            // 16:9
             (3840, 2160), (3200, 1800), (2560, 1440), (2304, 1296), (2048, 1152),
             (1920, 1080), (1760, 990), (1600, 900), (1440, 810), (1360, 765), (1280, 720),
-            // 16:10
             (2560, 1600), (1920, 1200), (1680, 1050), (1440, 900), (1280, 800),
-            // ultrawide 21:9-ish
             (3440, 1440), (2560, 1080),
-            // 4:3 / 5:4
             (1600, 1200), (1400, 1050), (1280, 960), (1280, 1024), (1024, 768),
         ]
         for (w, h) in catalog {
-            guard w <= display.nativePixelWidth, w >= 1024 else { continue }
-            let key = "\(w)x\(h)"
-            if seen.insert(key).inserted {
+            guard w <= display.nativePixelWidth, w >= 1024, w * 2 <= maxBackingWidth else { continue }
+            if seen.insert("\(w)x\(h)").inserted {
                 out.append(SizeCandidate(w: w, h: h, fits: display.fitsPanelAspect(width: w, height: h)))
             }
         }
-        // Fitting sizes first, each group ordered large → small looks-like
         return out.sorted { a, b in
             if a.fits != b.fits { return a.fits }
             return a.w > b.w
         }
     }
 
-    /// Best "looks like" size to suggest before HiDPI exists (used by the enable flow).
+    /// Best "looks like" size to suggest before HiDPI exists (enable flow).
     static func bestCandidate(for display: DisplayInfo) -> (w: Int, h: Int)? {
         let target = effectiveTargetUIPPI(for: display)
         let ranked = candidateLooksLikeSizes(for: display).map { c -> ((w: Int, h: Int), Double) in

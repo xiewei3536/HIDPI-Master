@@ -21,44 +21,47 @@ struct SettingsView: View {
                     .labelsHidden()
                 }
 
+                section(L("settings.pref"), icon: "textformat.size") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("", selection: $profiles.sizePreference) {
+                            ForEach(ProfileStore.SizePreference.allCases) { pref in
+                                Text(L(pref.labelKey)).tag(pref)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        Text(L("settings.pref.desc"))
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
                 section(L("settings.behavior"), icon: "slider.horizontal.3") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle(isOn: $profiles.advancedMode) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L("settings.advanced"))
-                                    .font(.system(size: 12, weight: .medium))
-                                Text(L("settings.advanced.desc"))
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-
-                        Toggle(isOn: $profiles.autoApply) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L("settings.autoApply"))
-                                    .font(.system(size: 12, weight: .medium))
-                                Text(L("settings.autoApply.desc"))
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-
+                        toggleRow($profiles.advancedMode, "settings.advanced", "settings.advanced.desc")
+                        toggleRow($profiles.autoApply, "settings.autoApply", "settings.autoApply.desc")
                         if profiles.supportsLaunchAtLogin {
-                            Toggle(isOn: $profiles.launchAtLogin) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L("settings.launchAtLogin"))
-                                        .font(.system(size: 12, weight: .medium))
-                                    Text(L("settings.launchAtLogin.desc"))
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.secondary)
-                                }
+                            toggleRow($profiles.launchAtLogin, "settings.launchAtLogin", "settings.launchAtLogin.desc")
+                        }
+                    }
+                }
+
+                section(L("settings.updates"), icon: "arrow.down.circle") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        toggleRow($profiles.autoCheckUpdates, "update.autoCheck", "update.autoCheck.desc")
+                        HStack(spacing: 8) {
+                            Button {
+                                UpdateChecker.shared.check(userInitiated: true)
+                            } label: {
+                                Text(L("update.check"))
+                                    .font(.system(size: 11, weight: .semibold))
                             }
-                            .toggleStyle(.switch)
                             .controlSize(.small)
+                            .disabled(updater.isChecking)
+                            if updater.isChecking {
+                                ProgressView().controlSize(.small)
+                            }
                         }
                     }
                 }
@@ -79,35 +82,6 @@ struct SettingsView: View {
                     }
                 }
 
-                section(L("settings.updates"), icon: "arrow.down.circle") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle(isOn: $profiles.autoCheckUpdates) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L("update.autoCheck"))
-                                    .font(.system(size: 12, weight: .medium))
-                                Text(L("update.autoCheck.desc"))
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        HStack(spacing: 8) {
-                            Button {
-                                UpdateChecker.shared.check(userInitiated: true)
-                            } label: {
-                                Text(L("update.check"))
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .controlSize(.small)
-                            .disabled(updater.isChecking)
-                            if updater.isChecking {
-                                ProgressView().controlSize(.small)
-                            }
-                        }
-                    }
-                }
-
                 section(L("settings.about"), icon: "info.circle") {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L("app.name") + " v" + SystemInfo.appVersion)
@@ -119,11 +93,28 @@ struct SettingsView: View {
                         Text(SystemInfo.chipDescription)
                             .font(.system(size: 9, design: .monospaced))
                             .foregroundColor(Color.secondary.opacity(0.7))
+                        Link(L("about.github"), destination: URL(string: "https://github.com/xiewei3536/HIDPI-Master")!)
+                            .font(.system(size: 10))
                     }
                 }
             }
             .padding(14)
         }
+    }
+
+    private func toggleRow(_ binding: Binding<Bool>, _ titleKey: String, _ descKey: String) -> some View {
+        Toggle(isOn: binding) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L(titleKey))
+                    .font(.system(size: 12, weight: .medium))
+                Text(L(descKey))
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .toggleStyle(.switch)
+        .controlSize(.small)
     }
 
     @ViewBuilder
@@ -148,9 +139,7 @@ struct SettingsView: View {
     }
 
     private func restoreAll() {
-        // 1. Tear down all virtual displays
         VirtualDisplayController.shared.disableAll()
-        // 2. Remove installed EDID overrides for currently connected displays
         let installed = manager.displays.filter { EDIDOverrideInstaller.isInstalled(for: $0) }
         DispatchQueue.global().async {
             var failed = false

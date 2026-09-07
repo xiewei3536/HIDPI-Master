@@ -56,7 +56,7 @@
 "alert.ok" = "OK";
 "alert.cancel" = "Cancel";
 "alert.rebootTitle" = "Override installed";
-"alert.rebootMsg" = "Restart your Mac to activate HiDPI. After restarting, open HiDPI Master and apply the recommended resolution.";
+"alert.rebootMsg" = "The new HiDPI sizes appear after a restart. Keep the option below checked and I will apply your size automatically once the Mac is back.";
 "alert.rebootNow" = "Restart Now";
 "alert.later" = "Later";
 
@@ -132,3 +132,42 @@
 "update.errMsg" = "Could not reach the update server. Please try again later.";
 "update.notifyTitle" = "HiDPI Master update available";
 "update.notifyBody" = "Version %@ is ready — click to install.";
+
+/* 1.1 — humane extras */
+"header.optimize" = "Optimize";
+"header.optimizeHint" = "Apply the recommended size to every external display";
+"header.allGood" = "All set";
+"welcome.title" = "Hi! I live in your menu bar";
+"welcome.body" = "Click the ✨ icon any time. Plug in an external monitor and I'll suggest a size that's big and crisp — one click to apply, always HiDPI.";
+"hint.noExternal" = "Connect an external monitor and a smart recommendation will appear here.";
+"pref.title" = "I prefer";
+"pref.larger" = "Bigger text";
+"pref.balanced" = "Balanced";
+"pref.space" = "More space";
+"pref.help" = "Shifts what counts as “just right” for you";
+"settings.pref" = "My preference";
+"settings.pref.desc" = "Tunes every recommendation and size label: bigger text for comfort, or more space for multitasking.";
+"size.unknown.chip" = "Screen size?";
+"size.unknown.title" = "How big is this screen?";
+"size.unknown.desc" = "The monitor didn't report its size. Pick it once and recommendations switch on.";
+"size.auto" = "Auto-detect";
+"size.chip.help" = "Click to correct the screen size";
+"badge.hidpi.help" = "Retina 2× rendering — crisp text";
+"badge.lowres.help" = "Non-Retina — text looks coarse when enlarged";
+"reco.preview.help" = "Text size now → after applying";
+"keep.title" = "Does this look right?";
+"keep.desc" = "If the picture is fine, keep it. Otherwise it reverts automatically.";
+"keep.countdown" = "Reverting in %ld s…";
+"keep.keep" = "Keep";
+"keep.revert" = "Revert";
+"persist.title" = "HiDPI is not saved yet";
+"persist.desc" = "The current HiDPI sizes are not backed by a system override file, so they may disappear or shrink after the next restart. Saving writes the full set of HiDPI sizes for this screen (admin password; active after a restart).";
+"persist.save" = "Save now";
+"persist.doneTitle" = "Saved";
+"persist.doneMsg" = "Saved. After a restart the full set of HiDPI sizes appears and stays.";
+"enable.sheet.titleMore" = "Add HiDPI sizes";
+"enable.mismatchGroup" = "Sizes with a different shape (%ld, advanced)";
+"enable.alreadyHave" = "already available";
+"alert.autoApplyAfterReboot" = "Apply this size automatically after restart (launch at login)";
+"menu.open" = "Open HiDPI Master";
+"about.github" = "GitHub · source & releases";

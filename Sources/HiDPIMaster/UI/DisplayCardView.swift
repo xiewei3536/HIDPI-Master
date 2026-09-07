@@ -11,22 +11,22 @@ struct DisplayCardView: View {
     @State private var showEnableSheet = false
     @State private var sliderIndex: Double = 0
 
+    private static let inchChoices: [Double] = [21.5, 24, 27, 32, 34, 38, 43, 49]
+
     private var isSimple: Bool { !profiles.advancedMode }
+    private var topReco: Recommendation? { RecommendationEngine.recommend(for: display).first }
+    private var isVirtualActive: Bool { display.isVirtualMirror }
+    private var isIntel: Bool { !SystemInfo.isAppleSilicon }
 
-    private var recommendations: [Recommendation] {
-        RecommendationEngine.recommend(for: display)
-    }
-
-    private var topReco: Recommendation? { recommendations.first }
-
-    private var isVirtualActive: Bool {
-        VirtualDisplayController.shared.isVirtualDisplay(display.mirrorsDisplayID)
-    }
+    private var hasUnsavedHiDPI: Bool { manager.needsPersistence(display) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             titleRow
             specRow
+            if display.sizeUnknown && !display.isBuiltin {
+                sizeAskBanner
+            }
             if isVirtualActive {
                 virtualBadge
             }
@@ -35,6 +35,9 @@ struct DisplayCardView: View {
             }
             if !display.hasHiDPIModes && !display.isBuiltin && !isVirtualActive {
                 enableBanner
+            }
+            if hasUnsavedHiDPI {
+                persistBanner
             }
             modesSection
             refreshSection
@@ -56,7 +59,7 @@ struct DisplayCardView: View {
         }
     }
 
-    // MARK: - Rows
+    // MARK: - Title & specs
 
     private var titleRow: some View {
         HStack(spacing: 8) {
@@ -83,28 +86,75 @@ struct DisplayCardView: View {
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
                 .background(Capsule().fill((mode.isHiDPI ? Color.green : Color.orange).opacity(0.12)))
+                .help(mode.isHiDPI ? L("badge.hidpi.help") : L("badge.lowres.help"))
             }
         }
     }
 
     private var specRow: some View {
         HStack(spacing: 6) {
-            if display.diagonalInches > 1 {
-                specChip(String(format: "%.1f\u{2033}", display.diagonalInches))
-                if !isSimple {
-                    specChip(L("spec.ppi", Int(display.ppi.rounded())))
-                }
+            if !display.isBuiltin {
+                sizeMenu
+            } else if display.diagonalInches > 1 {
+                specChip(inchText(display.diagonalInches))
             }
             if !isSimple {
+                if display.diagonalInches > 1 {
+                    specChip(L("spec.ppi", Int(display.ppi.rounded())))
+                }
                 specChip("\(display.nativePixelWidth) × \(display.nativePixelHeight)")
                 if let mode = display.currentMode {
                     specChip(L("spec.current", mode.width, mode.height))
                 }
-            } else if let mode = display.currentMode, display.hasHiDPIModes {
+            } else if let mode = display.currentMode, display.hasHiDPIModes, !display.sizeUnknown {
                 specChip(L("size.current", L(RecommendationEngine.sizeLevelKey(for: display, mode: mode))))
+                    .help(modeTooltip(mode))
             }
             Spacer()
         }
+    }
+
+    private func inchText(_ inches: Double) -> String {
+        let rounded = (inches * 2).rounded() / 2
+        let text = rounded == rounded.rounded() ? String(Int(rounded)) : String(format: "%.1f", rounded)
+        return text + "\u{2033}"
+    }
+
+    /// Screen size chip; click to correct a wrong/missing EDID size.
+    private var sizeMenu: some View {
+        Menu {
+            ForEach(Self.inchChoices, id: \.self) { inch in
+                Button {
+                    profiles.setManualDiagonal(inch, for: display.persistentKey)
+                } label: {
+                    if display.manualDiagonalInches == inch {
+                        Label(inchText(inch), systemImage: "checkmark")
+                    } else {
+                        Text(inchText(inch))
+                    }
+                }
+            }
+            Divider()
+            Button(L("size.auto")) {
+                profiles.setManualDiagonal(nil, for: display.persistentKey)
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "ruler")
+                    .font(.system(size: 8))
+                Text(display.sizeUnknown ? L("size.unknown.chip") : inchText(display.diagonalInches))
+            }
+            .font(.system(size: 10, weight: .medium, design: .rounded))
+            .foregroundColor(display.sizeUnknown ? .accentColor : .secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(display.sizeUnknown ? Color.accentColor.opacity(0.12)
+                                                          : Color.primary.opacity(0.05)))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(L("size.chip.help"))
     }
 
     private func specChip(_ text: String) -> some View {
@@ -114,6 +164,44 @@ struct DisplayCardView: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(Capsule().fill(Color.primary.opacity(0.05)))
+    }
+
+    private func modeTooltip(_ mode: ModeInfo) -> String {
+        var parts = ["\(mode.width) × \(mode.height)"]
+        if mode.isHiDPI { parts.append("HiDPI 2×") }
+        if mode.refreshRate > 0 { parts.append(L("refresh.hz", Int(mode.refreshRate.rounded()))) }
+        return parts.joined(separator: " · ")
+    }
+
+    // MARK: - Banners
+
+    private var sizeAskBanner: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "ruler")
+                .font(.system(size: 12))
+                .foregroundColor(.accentColor)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("size.unknown.title"))
+                    .font(.system(size: 12, weight: .semibold))
+                Text(L("size.unknown.desc"))
+                    .font(.system(size: 10.5))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 5) {
+                    ForEach(Self.inchChoices.prefix(6), id: \.self) { inch in
+                        Button(inchText(inch)) {
+                            profiles.setManualDiagonal(inch, for: display.persistentKey)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accentColor.opacity(0.07)))
     }
 
     private var virtualBadge: some View {
@@ -136,84 +224,6 @@ struct DisplayCardView: View {
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.purple.opacity(0.08)))
     }
-
-    // MARK: - Recommendation
-
-    private func recommendationBlock(_ reco: Recommendation) -> some View {
-        let isCurrent = display.currentMode?.resolutionKey == reco.mode?.resolutionKey
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 5) {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.yellow)
-                Text(L("reco.title"))
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                Spacer()
-                sizePreview(reco)
-            }
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    if isSimple, let mode = reco.mode {
-                        Text(L(RecommendationEngine.sizeLevelKey(for: display, mode: mode)) + L("size.crispSuffix"))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                    } else {
-                        Text(L("reco.looksLike", reco.looksLikeWidth, reco.looksLikeHeight))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                    }
-                    Text(reasonText(reco))
-                        .font(.system(size: 10.5))
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer()
-                if isCurrent {
-                    Label(L("reco.applied"), systemImage: "checkmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.green)
-                } else if let mode = reco.mode {
-                    Button {
-                        applyMode(display.variantKeepingRefresh(of: mode))
-                    } label: {
-                        Text(L("reco.apply"))
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                }
-            }
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [Color.blue.opacity(0.08), Color.purple.opacity(0.06)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing))
-        )
-    }
-
-    /// Tiny "Aa" preview comparing current vs recommended UI size.
-    private func sizePreview(_ reco: Recommendation) -> some View {
-        let base: CGFloat = 11
-        let currentW = CGFloat(display.currentMode?.width ?? display.nativePixelWidth)
-        let ratio = currentW > 0 ? CGFloat(reco.looksLikeWidth) / currentW : 1
-        let newSize = min(max(base / ratio, 7), 17)
-        return HStack(spacing: 4) {
-            Text("Aa").font(.system(size: base, weight: .medium))
-                .foregroundColor(Color.secondary.opacity(0.55))
-            Image(systemName: "arrow.right")
-                .font(.system(size: 7))
-                .foregroundColor(Color.secondary.opacity(0.5))
-            Text("Aa").font(.system(size: newSize, weight: .medium))
-                .foregroundColor(.primary.opacity(0.8))
-        }
-    }
-
-    private func reasonText(_ reco: Recommendation) -> String {
-        reco.reasonKeys.map { L($0) }.joined(separator: L("reco.reasonSeparator"))
-    }
-
-    // MARK: - Enable banner
 
     private var enableBanner: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -243,6 +253,185 @@ struct DisplayCardView: View {
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.08)))
+    }
+
+    private var persistBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "externaldrive.badge.exclamationmark")
+                    .font(.system(size: 11))
+                    .foregroundColor(.orange)
+                Text(L("persist.title"))
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            Text(L("persist.desc"))
+                .font(.system(size: 10.5))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                saveOverride()
+            } label: {
+                HStack(spacing: 4) {
+                    if isWorking { ProgressView().controlSize(.mini) }
+                    Image(systemName: "square.and.arrow.down")
+                    Text(L("persist.save"))
+                }
+                .font(.system(size: 11, weight: .semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(isWorking)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.08)))
+    }
+
+    private func saveOverride() {
+        guard !isWorking else { return }
+        isWorking = true
+        let disp = display
+        var sizes = disp.uniqueHiDPIModes
+            .filter { disp.fitsPanelAspect(width: $0.width, height: $0.height) }
+            .map { (w: $0.width, h: $0.height) }
+        for c in RecommendationEngine.candidateLooksLikeSizes(for: disp)
+        where !sizes.contains(where: { $0.w == c.w && $0.h == c.h }) {
+            sizes.append(c)
+        }
+        // What to switch to once the Mac is back: keep today's HiDPI size if
+        // it fits, otherwise the best candidate for this panel.
+        let wish: (w: Int, h: Int)? = {
+            if let cur = disp.currentMode, cur.isHiDPI, disp.fitsPanelAspect(width: cur.width, height: cur.height) {
+                return (cur.width, cur.height)
+            }
+            return RecommendationEngine.bestCandidate(for: disp)
+        }()
+        DispatchQueue.global().async {
+            do {
+                try EDIDOverrideInstaller.install(for: disp, looksLikeSizes: sizes)
+                DispatchQueue.main.async {
+                    isWorking = false
+                    manager.refresh()
+                    let decision = Alerts.askReboot()
+                    if decision.autoApplyAfterReboot, let wish {
+                        ProfileStore.shared.setPendingLooksLike(
+                            .init(width: wish.w, height: wish.h), for: disp.persistentKey)
+                        if ProfileStore.shared.supportsLaunchAtLogin {
+                            ProfileStore.shared.launchAtLogin = true
+                        }
+                    }
+                    if decision.rebootNow {
+                        let script = NSAppleScript(source: "tell application \"System Events\" to restart")
+                        var err: NSDictionary?
+                        script?.executeAndReturnError(&err)
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    isWorking = false
+                    Alerts.error(L("enable.error"), error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    // MARK: - Recommendation
+
+    private func recommendationBlock(_ reco: Recommendation) -> some View {
+        let isCurrent = display.currentMode?.resolutionKey == reco.mode?.resolutionKey
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 5) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow)
+                Text(L("reco.title"))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                Spacer()
+                if !isCurrent { sizePreview(reco) }
+            }
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if isSimple, let mode = reco.mode {
+                        Text(L(RecommendationEngine.sizeLevelKey(for: display, mode: mode)) + L("size.crispSuffix"))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .help(modeTooltip(mode))
+                    } else {
+                        Text(L("reco.looksLike", reco.looksLikeWidth, reco.looksLikeHeight))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                    }
+                    Text(reasonText(reco))
+                        .font(.system(size: 10.5))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                if isCurrent {
+                    Label(L("reco.applied"), systemImage: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.green)
+                } else if let mode = reco.mode {
+                    Button {
+                        applyMode(display.variantKeepingRefresh(of: mode))
+                    } label: {
+                        Text(L("reco.apply"))
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+            }
+            preferenceRow
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color.blue.opacity(0.08), Color.purple.opacity(0.06)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        )
+    }
+
+    /// "I prefer: bigger text / balanced / more space" — shifts what counts as just right.
+    private var preferenceRow: some View {
+        HStack(spacing: 6) {
+            Text(L("pref.title"))
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+            Picker("", selection: $profiles.sizePreference) {
+                ForEach(ProfileStore.SizePreference.allCases) { pref in
+                    Text(L(pref.labelKey)).tag(pref)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.mini)
+            .frame(maxWidth: 190)
+            Spacer()
+        }
+        .help(L("pref.help"))
+    }
+
+    /// Tiny "Aa" preview comparing current vs recommended UI size.
+    private func sizePreview(_ reco: Recommendation) -> some View {
+        let base: CGFloat = 11
+        let currentW = CGFloat(display.currentMode?.width ?? display.nativePixelWidth)
+        let ratio = currentW > 0 ? CGFloat(reco.looksLikeWidth) / currentW : 1
+        let newSize = min(max(base / ratio, 7), 17)
+        return HStack(spacing: 4) {
+            Text("Aa").font(.system(size: base, weight: .medium))
+                .foregroundColor(Color.secondary.opacity(0.55))
+            Image(systemName: "arrow.right")
+                .font(.system(size: 7))
+                .foregroundColor(Color.secondary.opacity(0.5))
+            Text("Aa").font(.system(size: newSize, weight: .medium))
+                .foregroundColor(.primary.opacity(0.8))
+        }
+        .help(L("reco.preview.help"))
+    }
+
+    private func reasonText(_ reco: Recommendation) -> String {
+        reco.reasonKeys.map { L($0) }.joined(separator: L("reco.reasonSeparator"))
     }
 
     // MARK: - Modes
@@ -301,7 +490,6 @@ struct DisplayCardView: View {
     private var currentSliderIndex: Int {
         let sorted = sortedHiDPIModes
         if let i = sorted.firstIndex(where: { $0.resolutionKey == display.currentMode?.resolutionKey }) { return i }
-        // Current mode not HiDPI: point at the nearest looks-like width
         guard let cur = display.currentMode else { return 0 }
         return sorted.enumerated().min {
             abs($0.element.width - cur.width) < abs($1.element.width - cur.width)
@@ -339,6 +527,7 @@ struct DisplayCardView: View {
                         }
                     }
                 }
+                .help(modeTooltip(previewMode))
                 VStack(spacing: 1) {
                     Text("Aa")
                         .font(.system(size: 11, weight: .semibold))
@@ -363,6 +552,7 @@ struct DisplayCardView: View {
                 }
                 Spacer()
             }
+            .help(modeTooltip(previewMode))
         }
         .onAppear { sliderIndex = Double(currentSliderIndex) }
         .onChange(of: display.currentMode?.id) { _ in
@@ -399,6 +589,7 @@ struct DisplayCardView: View {
     private func modeChip(_ mode: ModeInfo) -> some View {
         let isCurrent = display.currentMode?.resolutionKey == mode.resolutionKey
         let isRecommended = topReco?.mode?.resolutionKey == mode.resolutionKey
+        let fits = display.fitsPanelAspect(width: mode.width, height: mode.height)
         return Button {
             applyMode(display.variantKeepingRefresh(of: mode))
         } label: {
@@ -408,12 +599,12 @@ struct DisplayCardView: View {
                         .font(.system(size: 7))
                         .foregroundColor(isCurrent ? .white : .yellow)
                 }
-                if !display.fitsPanelAspect(width: mode.width, height: mode.height) {
+                if !fits {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 7))
                         .foregroundColor(isCurrent ? .white : .orange)
                 }
-                Text("\(mode.width)×\(mode.height)")
+                Text(verbatim: "\(mode.width)×\(mode.height)")
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 if mode.isHiDPI {
                     Text("2×")
@@ -431,6 +622,7 @@ struct DisplayCardView: View {
             .foregroundColor(isCurrent ? .white : .primary)
         }
         .buttonStyle(.plain)
+        .help(fits ? L(RecommendationEngine.sizeLevelKey(for: display, mode: mode)) : L("badge.aspectMismatch"))
     }
 
     // MARK: - Refresh rate (Hz)
@@ -486,21 +678,15 @@ struct DisplayCardView: View {
         .buttonStyle(.borderless)
     }
 
+    // MARK: - Apply
+
     private func applyMode(_ mode: ModeInfo) {
         guard !isWorking else { return }
-        if !display.fitsPanelAspect(width: mode.width, height: mode.height),
-           !Alerts.confirmAspectMismatch() {
-            return
-        }
         isWorking = true
-        DispatchQueue.global().async {
-            let ok = DisplayManager.shared.apply(mode: mode, to: display)
-            DispatchQueue.main.async {
-                isWorking = false
-                if !ok {
-                    Alerts.error(L("err.applyFailed"), L("err.applyFailedMsg"))
-                }
-            }
+        let disp = display
+        DispatchQueue.main.async {
+            DisplayManager.shared.applySafely(mode: mode, to: disp)
+            isWorking = false
         }
     }
 }

@@ -56,7 +56,7 @@
 "alert.ok" = "好";
 "alert.cancel" = "取消";
 "alert.rebootTitle" = "覆寫檔已安裝";
-"alert.rebootMsg" = "請重新開機以啟用 HiDPI。重新開機後，打開 HiDPI 大師並套用推薦的解析度即可。";
+"alert.rebootMsg" = "重新開機後，新的 HiDPI 檔位才會出現。勾選下方選項，我會在開機後自動幫你套用。";
 "alert.rebootNow" = "立即重新開機";
 "alert.later" = "稍後";
 
@@ -132,3 +132,42 @@
 "update.errMsg" = "無法連線更新伺服器，請稍後再試。";
 "update.notifyTitle" = "HiDPI 大師有新版本";
 "update.notifyBody" = "版本 %@ 已可下載，點按即可安裝。";
+
+/* 1.1 — 人性化補強 */
+"header.optimize" = "一鍵最佳化";
+"header.optimizeHint" = "把推薦大小套用到所有外接螢幕";
+"header.allGood" = "都設定好了";
+"welcome.title" = "嗨！我住在選單列";
+"welcome.body" = "隨時點選單列的 ✨ 圖示找我。接上外接螢幕後，我會推薦「又大又清晰」的大小，一鍵套用，而且永遠是 HiDPI。";
+"hint.noExternal" = "接上外接螢幕後，這裡會出現智慧推薦。";
+"pref.title" = "我偏好";
+"pref.larger" = "大字";
+"pref.balanced" = "均衡";
+"pref.space" = "空間";
+"pref.help" = "調整你心中「剛剛好」的標準";
+"settings.pref" = "我的偏好";
+"settings.pref.desc" = "影響所有推薦與大小標籤：想看得舒服選「大字」，想多開視窗選「空間」。";
+"size.unknown.chip" = "幾吋？";
+"size.unknown.title" = "這片螢幕幾吋？";
+"size.unknown.desc" = "螢幕沒有回報實體尺寸。選一次就能開始給你建議。";
+"size.auto" = "自動偵測";
+"size.chip.help" = "點一下可修正螢幕尺寸";
+"badge.hidpi.help" = "Retina 2× 渲染，文字清晰";
+"badge.lowres.help" = "非 Retina，放大後文字會粗糙";
+"reco.preview.help" = "文字大小：目前 → 套用後";
+"keep.title" = "畫面看起來正常嗎？";
+"keep.desc" = "沒問題就按「保留」；沒有回應會自動還原上一個設定。";
+"keep.countdown" = "%ld 秒後自動還原…";
+"keep.keep" = "保留";
+"keep.revert" = "還原";
+"persist.title" = "HiDPI 設定尚未保存";
+"persist.desc" = "目前的 HiDPI 檔位沒有系統覆寫檔支撐，重開機後可能消失或變少。保存會為這片螢幕寫入完整的 HiDPI 檔位（需管理員密碼，重開機後生效）。";
+"persist.save" = "立即保存";
+"persist.doneTitle" = "已保存";
+"persist.doneMsg" = "已保存。重新開機後，完整的 HiDPI 檔位就會出現並持續保留。";
+"enable.sheet.titleMore" = "新增 HiDPI 檔位";
+"enable.mismatchGroup" = "比例不同的尺寸（%ld 個，進階）";
+"enable.alreadyHave" = "已有此檔位";
+"alert.autoApplyAfterReboot" = "重開機後自動套用此大小（並在登入時啟動）";
+"menu.open" = "打開 HiDPI 大師";
+"about.github" = "GitHub · 原始碼與版本發布";

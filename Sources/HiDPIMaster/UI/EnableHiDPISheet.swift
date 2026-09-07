@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Guided flow to enable HiDPI for a panel that has no HiDPI modes yet.
+/// Guided flow to enable HiDPI (or add more HiDPI sizes) for a panel.
 /// Intel: EDID override (native after reboot). Apple Silicon: virtual display.
 struct EnableHiDPISheet: View {
     let display: DisplayInfo
@@ -15,12 +15,14 @@ struct EnableHiDPISheet: View {
     @State private var method: Method = SystemInfo.isAppleSilicon ? .virtual : .override
     @State private var selectedSize: String = ""
     @State private var isWorking = false
+    @State private var showMismatched = false
 
     private var candidates: [RecommendationEngine.SizeCandidate] {
         RecommendationEngine.extendedCandidates(for: display)
     }
 
-    private var hasMismatched: Bool { candidates.contains { !$0.fits } }
+    private var fitting: [RecommendationEngine.SizeCandidate] { candidates.filter { $0.fits } }
+    private var mismatched: [RecommendationEngine.SizeCandidate] { candidates.filter { !$0.fits } }
 
     private var bestCandidate: (w: Int, h: Int)? {
         RecommendationEngine.bestCandidate(for: display)
@@ -32,7 +34,7 @@ struct EnableHiDPISheet: View {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.purple)
-                Text(L("enable.sheet.title"))
+                Text(display.hasHiDPIModes ? L("enable.sheet.titleMore") : L("enable.sheet.title"))
                     .font(.system(size: 15, weight: .bold))
                 Spacer()
             }
@@ -57,23 +59,37 @@ struct EnableHiDPISheet: View {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 6)], spacing: 6) {
-                        ForEach(candidates) { c in
-                            sizeChip(c)
+                    VStack(alignment: .leading, spacing: 8) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 6)], spacing: 6) {
+                            ForEach(fitting) { c in sizeChip(c) }
+                        }
+                        if !mismatched.isEmpty {
+                            DisclosureGroup(isExpanded: $showMismatched) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(L("enable.aspectNote"))
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.orange)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 6)], spacing: 6) {
+                                        ForEach(mismatched) { c in sizeChip(c) }
+                                    }
+                                }
+                                .padding(.top, 4)
+                            } label: {
+                                Text(L("enable.mismatchGroup", mismatched.count))
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
+                    .padding(.trailing, 2)
                 }
-                .frame(maxHeight: 150)
-                if hasMismatched {
-                    Text(L("enable.aspectNote"))
-                        .font(.system(size: 10))
-                        .foregroundColor(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                .frame(maxHeight: 170)
                 if method == .override {
                     Text(L("enable.override.allNote"))
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -100,11 +116,11 @@ struct EnableHiDPISheet: View {
             }
         }
         .padding(18)
-        .frame(width: 400, height: 420)
+        .frame(width: 400, height: 470)
         .onAppear {
             if let best = bestCandidate {
                 selectedSize = "\(best.w)x\(best.h)"
-            } else if let first = candidates.first {
+            } else if let first = fitting.first ?? candidates.first {
                 selectedSize = "\(first.w)x\(first.h)"
             }
         }
@@ -132,6 +148,7 @@ struct EnableHiDPISheet: View {
         let isBest = bestCandidate.map { "\($0.w)x\($0.h)" } == key
         let simple = !ProfileStore.shared.advancedMode
         let levelText = L(RecommendationEngine.sizeLevelKey(for: display, looksLikeWidth: c.w, looksLikeHeight: c.h))
+        let alreadyHave = display.uniqueHiDPIModes.contains { $0.width == c.w && $0.height == c.h }
         return Button {
             selectedSize = key
         } label: {
@@ -150,7 +167,9 @@ struct EnableHiDPISheet: View {
                     Text(simple ? levelText : "\(c.w)×\(c.h)")
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
                 }
-                Text(c.fits ? (simple ? "\(c.w)×\(c.h)" : levelText) : L("badge.aspectMismatch"))
+                Text(!c.fits ? L("badge.aspectMismatch")
+                     : alreadyHave ? L("enable.alreadyHave")
+                     : (simple ? "\(c.w)×\(c.h)" : levelText))
                     .font(.system(size: 8))
                     .foregroundColor(!c.fits ? (isSelected ? .white.opacity(0.9) : .orange)
                                              : (isSelected ? .white.opacity(0.75) : .secondary))
@@ -166,6 +185,7 @@ struct EnableHiDPISheet: View {
             .foregroundColor(isSelected ? .white : .primary)
         }
         .buttonStyle(.plain)
+        .help("\(c.w) × \(c.h) · HiDPI 2×")
     }
 
     private var selectedCandidate: (w: Int, h: Int)? {
@@ -182,22 +202,30 @@ struct EnableHiDPISheet: View {
         }
         isWorking = true
         // Install every size that fits the panel, plus the explicit pick.
-        var sizes = candidates.filter { $0.fits }.map { (w: $0.w, h: $0.h) }
+        var sizes = fitting.map { (w: $0.w, h: $0.h) }
         if !sizes.contains(where: { $0.w == chosen.w && $0.h == chosen.h }) {
             sizes.append(chosen)
         }
-        let allCandidates = sizes
+        let allSizes = sizes
         let disp = display
         let chosenMethod = method
         DispatchQueue.global().async {
             do {
                 switch chosenMethod {
                 case .override:
-                    try EDIDOverrideInstaller.install(for: disp, looksLikeSizes: allCandidates)
+                    try EDIDOverrideInstaller.install(for: disp, looksLikeSizes: allSizes)
                     DispatchQueue.main.async {
                         isWorking = false
                         isPresented = false
-                        if Alerts.askReboot() {
+                        let decision = Alerts.askReboot()
+                        if decision.autoApplyAfterReboot {
+                            ProfileStore.shared.setPendingLooksLike(
+                                .init(width: chosen.w, height: chosen.h), for: disp.persistentKey)
+                            if ProfileStore.shared.supportsLaunchAtLogin {
+                                ProfileStore.shared.launchAtLogin = true
+                            }
+                        }
+                        if decision.rebootNow {
                             restartMac()
                         }
                     }

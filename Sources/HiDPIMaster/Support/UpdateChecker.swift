@@ -99,6 +99,9 @@ final class UpdateChecker: NSObject, ObservableObject {
 
     private func notify(_ release: Release) {
         pendingRelease = release
+        // Nag at most once per version for background checks
+        guard ProfileStore.shared.lastPromptedUpdateVersion != release.version else { return }
+        ProfileStore.shared.lastPromptedUpdateVersion = release.version
         guard Bundle.main.bundleIdentifier != nil else { return promptInstall(release) }
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
@@ -170,11 +173,19 @@ final class UpdateChecker: NSObject, ObservableObject {
                     throw PrivilegedRunner.RunError(message: "Not running from an app bundle")
                 }
                 let parent = target.deletingLastPathComponent().path
+                let backup = workDir.appendingPathComponent("previous.app")
                 if fm.isWritableFile(atPath: parent) {
-                    try? fm.removeItem(at: target)
-                    try fm.copyItem(at: newApp, to: target)
+                    // Move the old bundle aside first so a failed copy can be rolled back
+                    try fm.moveItem(at: target, to: backup)
+                    do {
+                        try fm.copyItem(at: newApp, to: target)
+                    } catch {
+                        try? fm.moveItem(at: backup, to: target)
+                        throw error
+                    }
                 } else {
-                    try PrivilegedRunner.run("rm -rf '\(target.path)' && cp -R '\(newApp.path)' '\(target.path)'")
+                    try PrivilegedRunner.run(
+                        "mv '\(target.path)' '\(backup.path)' && cp -R '\(newApp.path)' '\(target.path)'")
                 }
 
                 DispatchQueue.main.async {

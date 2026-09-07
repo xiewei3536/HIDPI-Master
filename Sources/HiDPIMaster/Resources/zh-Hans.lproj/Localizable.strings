@@ -56,7 +56,7 @@
 "alert.ok" = "好";
 "alert.cancel" = "取消";
 "alert.rebootTitle" = "覆写文件已安装";
-"alert.rebootMsg" = "请重启以启用 HiDPI。重启后，打开 HiDPI 大师并应用推荐的分辨率即可。";
+"alert.rebootMsg" = "重启后，新的 HiDPI 档位才会出现。勾选下方选项，我会在开机后自动帮你应用。";
 "alert.rebootNow" = "立即重启";
 "alert.later" = "稍后";
 
@@ -132,3 +132,42 @@
 "update.errMsg" = "无法连接更新服务器，请稍后再试。";
 "update.notifyTitle" = "HiDPI 大师有新版本";
 "update.notifyBody" = "版本 %@ 已可下载，点按即可安装。";
+
+/* 1.1 — 人性化补强 */
+"header.optimize" = "一键最佳化";
+"header.optimizeHint" = "把推荐大小应用到所有外接屏幕";
+"header.allGood" = "都设置好了";
+"welcome.title" = "嗨！我住在菜单栏";
+"welcome.body" = "随时点菜单栏的 ✨ 图标找我。接上外接屏幕后，我会推荐「又大又清晰」的大小，一键应用，而且永远是 HiDPI。";
+"hint.noExternal" = "接上外接屏幕后，这里会出现智能推荐。";
+"pref.title" = "我偏好";
+"pref.larger" = "大字";
+"pref.balanced" = "均衡";
+"pref.space" = "空间";
+"pref.help" = "调整你心中「刚刚好」的标准";
+"settings.pref" = "我的偏好";
+"settings.pref.desc" = "影响所有推荐与大小标签：想看得舒服选「大字」，想多开窗口选「空间」。";
+"size.unknown.chip" = "几英寸？";
+"size.unknown.title" = "这块屏幕几英寸？";
+"size.unknown.desc" = "屏幕没有报告物理尺寸。选一次就能开始给你建议。";
+"size.auto" = "自动检测";
+"size.chip.help" = "点一下可修正屏幕尺寸";
+"badge.hidpi.help" = "Retina 2× 渲染，文字清晰";
+"badge.lowres.help" = "非 Retina，放大后文字会粗糙";
+"reco.preview.help" = "文字大小：当前 → 应用后";
+"keep.title" = "画面看起来正常吗？";
+"keep.desc" = "没问题就按「保留」；没有响应会自动还原上一个设置。";
+"keep.countdown" = "%ld 秒后自动还原…";
+"keep.keep" = "保留";
+"keep.revert" = "还原";
+"persist.title" = "HiDPI 设置尚未保存";
+"persist.desc" = "当前的 HiDPI 档位没有系统覆写文件支撑，重启后可能消失或变少。保存会为这块屏幕写入完整的 HiDPI 档位（需管理员密码，重启后生效）。";
+"persist.save" = "立即保存";
+"persist.doneTitle" = "已保存";
+"persist.doneMsg" = "已保存。重启后，完整的 HiDPI 档位就会出现并持续保留。";
+"enable.sheet.titleMore" = "添加 HiDPI 档位";
+"enable.mismatchGroup" = "比例不同的尺寸（%ld 个，高级）";
+"enable.alreadyHave" = "已有此档位";
+"alert.autoApplyAfterReboot" = "重启后自动应用此大小（并在登录时启动）";
+"menu.open" = "打开 HiDPI 大师";
+"about.github" = "GitHub · 源码与版本发布";
